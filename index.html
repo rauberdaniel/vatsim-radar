@@ -7,8 +7,8 @@
   <title>VATSIM</title>
   <!--<link rel="stylesheet" href="main.css">-->
 
-  <link rel="stylesheet" href="/css/leaflet.css" />
-  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="css/leaflet.css" />
+  <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
   <header class="main-header">
@@ -23,9 +23,9 @@
     <p>Airplane by Michal Beno from the Noun Project</p>
   </p>
 
-  <script src="/js/leaflet.js"></script>
-  <script src="/js/leaflet.restoreview.js"></script>
-  <script src="/js/fetch.js"></script>
+  <script src="js/leaflet.js"></script>
+  <script src="js/leaflet.restoreview.js"></script>
+  <script src="js/fetch.js"></script>
   <script>
   var map = L.map('map', {minZoom: 3});
 
@@ -58,19 +58,19 @@
     var posx = ((i+12)%24)*48;
     planeIcons.basic[i] = L.divIcon({
       className: 'plane-icon',
-      html: '<img src="/images/plane.svg" alt="" style="transform:rotate('+(i*15)+'deg);"/>',
+      html: '<img src="images/plane.svg" alt="" style="transform:rotate('+(i*15)+'deg);"/>',
       iconSize: [20, 20],
       iconAnchor: [10, 10]
     });
     planeIcons.heavy[i] = L.divIcon({
       className: 'plane-icon',
-      html: '<img src="/images/plane.svg" alt="" style="transform:rotate('+(i*15)+'deg);"/>',
+      html: '<img src="images/plane.svg" alt="" style="transform:rotate('+(i*15)+'deg);"/>',
       iconSize: [28, 28],
       iconAnchor: [14, 14]
     });
     planeIcons.small[i] = L.divIcon({
       className: 'plane-icon',
-      html: '<img src="/images/plane.svg" alt="" style="transform:rotate('+(i*15)+'deg);"/>',
+      html: '<img src="images/plane.svg" alt="" style="transform:rotate('+(i*15)+'deg);"/>',
       iconSize: [16, 16],
       iconAnchor: [8, 8]
     });
@@ -80,35 +80,35 @@
     className: 'atc-icon tower',
     iconSize: [24, 24],
     iconAnchor: [12, 12],
-    iconUrl: '/images/tower.svg'
+    iconUrl: 'images/tower.svg'
   });
 
   var groundIcon = L.icon({
     className: 'atc-icon ground',
     iconSize: [24, 24],
     iconAnchor: [12, 12],
-    iconUrl: '/images/ground.svg'
+    iconUrl: 'images/ground.svg'
   });
 
   var atisIcon = L.icon({
     className: 'atc-icon atis',
     iconSize: [24, 24],
     iconAnchor: [12, 12],
-    iconUrl: '/images/atis.svg'
+    iconUrl: 'images/atis.svg'
   });
 
   var atcIcon = L.icon({
     className: 'atc-icon general',
     iconSize: [24, 24],
     iconAnchor: [12, 12],
-    iconUrl: '/images/atc.svg'
+    iconUrl: 'images/atc.svg'
   });
 
   fetchData();
   setInterval(fetchData, 60*1000);
 
   function updateATC() {
-    fetch('/atc.json').then(function(res){
+    fetch('atc.json').then(function(res){
       return res.json();
     }).then(function(data){
       data.data.forEach(function(atc){
@@ -128,7 +128,7 @@
   var currentAircrafts = [];
 
   function fetchData() {
-    fetch('/pilots.json').then(function(res){
+    fetch('pilots.json').then(function(res){
       return res.json();
     }).then(function(json){
       lastUpdate = (json.timestamp) * 1000;
