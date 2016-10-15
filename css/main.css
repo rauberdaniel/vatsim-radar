@@ -1,0 +1,54 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: "Helvetica Neue", Helvetica, sans-serif;
+}
+
+h1 {
+  font-weight: 400;
+}
+
+.main-header {
+  padding: 20px 10px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+#map {
+  width: 100vw;
+  height: 90vh;
+}
+
+.atc-icon {
+  z-index: 0 !important;
+}
+
+.plane-icon.hdg-0 { transform: rotate(0deg); }
+.plane-icon.hdg-15 { transform: rotate(15deg); }
+.plane-icon.hdg-30 { transform: rotate(30deg); }
+.plane-icon.hdg-45 { transform: rotate(45deg); }
+.plane-icon.hdg-60 { transform: rotate(60deg); }
+.plane-icon.hdg-75 { transform: rotate(75deg); }
+.plane-icon.hdg-90 { transform: rotate(90deg); }
+
+.plane-icon.hdg-105 { transform: rotate(105deg); }
+.plane-icon.hdg-120 { transform: rotate(120deg); }
+.plane-icon.hdg-135 { transform: rotate(135deg); }
+.plane-icon.hdg-150 { transform: rotate(150deg); }
+.plane-icon.hdg-165 { transform: rotate(165deg); }
+.plane-icon.hdg-180 { transform: rotate(180deg); }
+
+.plane-icon.hdg-195 { transform: rotate(195deg); }
+.plane-icon.hdg-210 { transform: rotate(210deg); }
+.plane-icon.hdg-225 { transform: rotate(225deg); }
+.plane-icon.hdg-240 { transform: rotate(240deg); }
+.plane-icon.hdg-255 { transform: rotate(255deg); }
+.plane-icon.hdg-270 { transform: rotate(270deg); }
+
+.plane-icon.hdg-285 { transform: rotate(285deg); }
+.plane-icon.hdg-300 { transform: rotate(300deg); }
+.plane-icon.hdg-315 { transform: rotate(315deg); }
+.plane-icon.hdg-330 { transform: rotate(330deg); }
+.plane-icon.hdg-345 { transform: rotate(345deg); }

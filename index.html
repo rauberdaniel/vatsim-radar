@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VATSIM</title>
+  <!--<link rel="stylesheet" href="main.css">-->
+
+  <link rel="stylesheet" href="/css/leaflet.css" />
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body>
+  <header class="main-header">
+    <h1>VATSIM Live</h1>
+    <p>Last Update: <span id="last-update"></span> <a onclick="fetchData()" href="#">update now</a></p>
+  </header>
+  <div id="map"></div>
+  <p>
+    <h2>Credits</h2>
+    <p>Airport by Aldric Rodríguez Iborra from the Noun Project</p>
+    <p>Airplane by Aldric Rodríguez Iborra from the Noun Project</p>
+    <p>Airplane by Michal Beno from the Noun Project</p>
+  </p>
+
+  <script src="/js/leaflet.js"></script>
+  <script src="/js/leaflet.restoreview.js"></script>
+  <script src="/js/fetch.js"></script>
+  <script>
+  var map = L.map('map', {minZoom: 3});
+
+  if (!map.restoreView()) {
+    map.setView([0, 0], 3);
+  }
+
+  L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  function getHeading(heading) {
+    // round to 15deg
+    return Math.round(heading/15) % 24;
+  }
+
+  function getAircraftClass(aircraft) {
+    if(  /^H\//.test(aircraft) ) { return 'heavy'; }
+    if(  /(C172|B58)/.test(aircraft) ) { return 'small'; }
+    return 'basic';
+  }
+
+  function getTitle(pilot) {
+    return pilot.callsign + " (" + pilot['planned_aircraft'] + ")";
+  }
+
+  var planeIcons = {basic: [], heavy: [], small: []};
+
+  for(var i=0; i<24; i++) {
+    var posx = ((i+12)%24)*48;
+    planeIcons.basic[i] = L.divIcon({
+      className: 'plane-icon',
+      html: '<img src="/images/plane.svg" alt="" style="transform:rotate('+(i*15)+'deg);"/>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
+    });
+    planeIcons.heavy[i] = L.divIcon({
+      className: 'plane-icon',
+      html: '<img src="/images/plane.svg" alt="" style="transform:rotate('+(i*15)+'deg);"/>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+    planeIcons.small[i] = L.divIcon({
+      className: 'plane-icon',
+      html: '<img src="/images/plane.svg" alt="" style="transform:rotate('+(i*15)+'deg);"/>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+  }
+
+  var towerIcon = L.icon({
+    className: 'atc-icon tower',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    iconUrl: '/images/tower.svg'
+  });
+
+  var groundIcon = L.icon({
+    className: 'atc-icon ground',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    iconUrl: '/images/ground.svg'
+  });
+
+  var atisIcon = L.icon({
+    className: 'atc-icon atis',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    iconUrl: '/images/atis.svg'
+  });
+
+  var atcIcon = L.icon({
+    className: 'atc-icon general',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    iconUrl: '/images/atc.svg'
+  });
+
+  fetchData();
+  setInterval(fetchData, 60*1000);
+
+  function updateATC() {
+    fetch('/atc.json').then(function(res){
+      return res.json();
+    }).then(function(data){
+      data.data.forEach(function(atc){
+        var options = {title: atc.callsign, icon: atcIcon};
+        if(/_TWR$/.test(atc.callsign)) { options.icon = towerIcon; }
+        if(/_GND$/.test(atc.callsign)) { options.icon = groundIcon; }
+        if(/_ATIS$/.test(atc.callsign)) { options.icon = atisIcon; }
+        L.marker([atc.latitude, atc.longitude], options).addTo(map);
+      });
+    })
+  }
+  updateATC();
+
+  var markers = {};
+  var currentAircraftIds = [];
+  var lastUpdate = undefined;
+  var currentAircrafts = [];
+
+  function fetchData() {
+    fetch('/pilots.json').then(function(res){
+      return res.json();
+    }).then(function(json){
+      lastUpdate = (json.timestamp) * 1000;
+      document.getElementById('last-update').innerHTML = new Date((json.timestamp + 13*3600) * 1000);
+      currentAircrafts = json.data;
+      updateAircrafts(json.data);
+    });
+  }
+
+  function updateAircrafts(aircrafts) {
+    var realUpdate = false;
+    if(aircrafts) { realUpdate = true; }
+    aircrafts = aircrafts || currentAircrafts;
+    var aircraftsAdded = [];
+    var aircraftsRemoved = [];
+    currentAircraftIds = [];
+    aircrafts.forEach(function(aircraft){
+      currentAircraftIds.push(aircraft.cid);
+      if(markers[aircraft.cid]) {
+        updateAircraftMarker(markers[aircraft.cid], aircraft, realUpdate);
+      } else {
+        aircraftsAdded.push(aircraft.cid);
+        addAircraftMarker(markers, aircraft)
+      }
+    });
+    for(id in markers) {
+      if(currentAircraftIds.indexOf(id) < 0) {
+        aircraftsRemoved.push(id);
+        removeAircraftMarker(markers, id);
+      }
+    };
+    //console.log('added', aircraftsAdded);
+    //console.log('removed', aircraftsRemoved);
+  }
+  setInterval(updateAircrafts, 200);
+
+  function updateAircraftMarker(marker, aircraft, newData) {
+    marker.setLatLng([aircraft.latitude + getYDelta(aircraft), aircraft.longitude + getXDelta(aircraft)]);
+    if(newData) {
+      marker.setIcon(planeIcons[getAircraftClass(aircraft['planned_aircraft'])][getHeading(aircraft.heading)]);
+    }
+  }
+
+  function addAircraftMarker(markers, aircraft) {
+    markers[aircraft.cid] = L.marker([aircraft.latitude, aircraft.longitude], {title: getTitle(aircraft), icon: planeIcons[getAircraftClass(aircraft['planned_aircraft'])][getHeading(aircraft.heading)]});
+    markers[aircraft.cid].addTo(map);
+  }
+
+  function removeAircraftMarker(markers, id) {
+    markers[id].remove();
+    delete markers[id];
+  }
+
+  function getTimeDelta() {
+    var d = new Date();
+    var offset = d.getTimezoneOffset() * 60 * 1000;
+    return (Date.now() - lastUpdate + offset) / 1000;
+  }
+
+  function getXDelta(aircraft) {
+    return getXSpeed(aircraft) * getTimeDelta();
+  }
+
+  function getYDelta(aircraft) {
+    return getYSpeed(aircraft) * getTimeDelta();
+  }
+
+  function getXSpeed(aircraft) {
+    var earthcircumfence = 40080000;
+    var degreeDistance = 1/360 * earthcircumfence * Math.cos(toRad(aircraft.latitude)); // distance of 1 degree in m
+    degreeDistance = Math.max(degreeDistance, 1) // make sure it does not get zero
+    var xGroundSpeed = toMperS(aircraft.groundspeed) * Math.sin(toRad(aircraft.heading));
+    return xGroundSpeed / degreeDistance;
+  }
+
+  function getYSpeed(aircraft) {
+    var degreeDistance = 111000; // distance of 1 degree in m
+    var yGroundSpeed = toMperS(aircraft.groundspeed) * Math.cos(toRad(aircraft.heading));
+    return yGroundSpeed / degreeDistance;
+  }
+
+  function toRad(grad) {
+    return grad/180*Math.PI;
+  }
+
+  function toMperS(groundspeed) {
+    return groundspeed * 0.51444;
+  }
+
+  </script>
+</body>
+</html>
