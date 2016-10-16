@@ -21,34 +21,72 @@ h1 {
   height: 90vh;
 }
 
-.atc-icon {
-  z-index: 0 !important;
+.atc-marker {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #345;
+  background: #fff;
+  border-radius: 50%;
+  line-height: 22px;
+  font-size: 8px;
+  font-weight: 900;
+  color: #345;
+  text-align: center;
+  background-image: url('../images/atc.svg');
 }
 
-.plane-icon.hdg-0 { transform: rotate(0deg); }
-.plane-icon.hdg-15 { transform: rotate(15deg); }
-.plane-icon.hdg-30 { transform: rotate(30deg); }
-.plane-icon.hdg-45 { transform: rotate(45deg); }
-.plane-icon.hdg-60 { transform: rotate(60deg); }
-.plane-icon.hdg-75 { transform: rotate(75deg); }
-.plane-icon.hdg-90 { transform: rotate(90deg); }
+.tower-marker {
+  background-image: url('../images/tower.svg');
+}
+.ground-marker {
+  background-image: url('../images/ground.svg');
+}
+.atis-marker {
+  background-image: url('../images/atis.svg');
+}
 
-.plane-icon.hdg-105 { transform: rotate(105deg); }
-.plane-icon.hdg-120 { transform: rotate(120deg); }
-.plane-icon.hdg-135 { transform: rotate(135deg); }
-.plane-icon.hdg-150 { transform: rotate(150deg); }
-.plane-icon.hdg-165 { transform: rotate(165deg); }
-.plane-icon.hdg-180 { transform: rotate(180deg); }
+.plane-marker div {
+  width: 30px;
+  height: 30px;
+  background: url('../images/plane.svg') no-repeat 50% 50%;
+}
 
-.plane-icon.hdg-195 { transform: rotate(195deg); }
-.plane-icon.hdg-210 { transform: rotate(210deg); }
-.plane-icon.hdg-225 { transform: rotate(225deg); }
-.plane-icon.hdg-240 { transform: rotate(240deg); }
-.plane-icon.hdg-255 { transform: rotate(255deg); }
-.plane-icon.hdg-270 { transform: rotate(270deg); }
+.plane-marker .plane-small {
+  background-size: 50% 50%;
+}
 
-.plane-icon.hdg-285 { transform: rotate(285deg); }
-.plane-icon.hdg-300 { transform: rotate(300deg); }
-.plane-icon.hdg-315 { transform: rotate(315deg); }
-.plane-icon.hdg-330 { transform: rotate(330deg); }
-.plane-icon.hdg-345 { transform: rotate(345deg); }
+.plane-marker .plane-basic {
+  background-size: 70% 70%;
+}
+
+.plane-marker .plane-heavy {
+  background-size: 100% 100%;
+}
+
+.plane-marker .hdg-0 { transform: rotate(0deg); }
+.plane-marker .hdg-15 { transform: rotate(15deg); }
+.plane-marker .hdg-30 { transform: rotate(30deg); }
+.plane-marker .hdg-45 { transform: rotate(45deg); }
+.plane-marker .hdg-60 { transform: rotate(60deg); }
+.plane-marker .hdg-75 { transform: rotate(75deg); }
+.plane-marker .hdg-90 { transform: rotate(90deg); }
+
+.plane-marker .hdg-105 { transform: rotate(105deg); }
+.plane-marker .hdg-120 { transform: rotate(120deg); }
+.plane-marker .hdg-135 { transform: rotate(135deg); }
+.plane-marker .hdg-150 { transform: rotate(150deg); }
+.plane-marker .hdg-165 { transform: rotate(165deg); }
+.plane-marker .hdg-180 { transform: rotate(180deg); }
+
+.plane-marker .hdg-195 { transform: rotate(195deg); }
+.plane-marker .hdg-210 { transform: rotate(210deg); }
+.plane-marker .hdg-225 { transform: rotate(225deg); }
+.plane-marker .hdg-240 { transform: rotate(240deg); }
+.plane-marker .hdg-255 { transform: rotate(255deg); }
+.plane-marker .hdg-270 { transform: rotate(270deg); }
+
+.plane-marker .hdg-285 { transform: rotate(285deg); }
+.plane-marker .hdg-300 { transform: rotate(300deg); }
+.plane-marker .hdg-315 { transform: rotate(315deg); }
+.plane-marker .hdg-330 { transform: rotate(330deg); }
+.plane-marker .hdg-345 { transform: rotate(345deg); }
