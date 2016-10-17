@@ -100,7 +100,14 @@
   */
 
   function updateAircraftMarker(marker, aircraft, newData) {
-    marker.setLngLat([aircraft.longitude + getXDelta(aircraft), aircraft.latitude + getYDelta(aircraft)]);
+    var lat = aircraft.latitude + getYDelta(aircraft);
+    var lon = aircraft.longitude + getXDelta(aircraft);
+
+    // make sure we don’t run over the borders
+    lat = Math.min(90, Math.max(-90, lat));
+    lon = Math.min(180, Math.max(-180, lon));
+
+    marker.setLngLat([lon, lat]);
     // set marker heading
     if(newData) {
       var plane = marker['_element'].querySelector('div');
@@ -170,6 +177,9 @@
   function getTimeDelta() {
     var d = new Date();
     var offset = d.getTimezoneOffset() * 60 * 1000;
+    if(Math.abs(offset) > 10*60*1000) {
+      return 0;
+    }
     return (Date.now() - lastUpdate + offset) / 1000;
   }
 

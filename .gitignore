@@ -121,3 +121,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+atc.json
+pilots.json
