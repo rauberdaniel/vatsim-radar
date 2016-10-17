@@ -24,8 +24,6 @@
     <p>Airplane by Michal Beno from the Noun Project</p>
   </p>
 
-  <script src="js/leaflet.js"></script>
-  <script src="js/leaflet.restoreview.js"></script>
   <script src="js/fetch.js"></script>
   <script>
   var lastUpdate = undefined;
@@ -40,7 +38,10 @@
         container: 'map',
         style: 'mapbox://styles/rauberdaniel/ciuc6yrzm002s2ho885r9u5dq',
         minZoom: 1,
-        zoom: 1
+        zoom: 1,
+        center: [0,0],
+        hash: true,
+        maxBounds: [[-210, -90], [210, 90]]
     });
 
     var fetchData = function() {
@@ -55,24 +56,24 @@
     };
 
     var updateAircrafts = function(aircrafts) {
-      var realUpdate = false;
-      if(aircrafts) { realUpdate = true; }
+      var isNewData = false;
+      if(aircrafts) { isNewData = true; }
       aircrafts = aircrafts || currentAircrafts;
-      var aircraftsAdded = [];
-      var aircraftsRemoved = [];
+      //var aircraftsAdded = [];
+      //var aircraftsRemoved = [];
       currentAircraftIds = [];
       aircrafts.forEach(function(aircraft){
         currentAircraftIds.push(aircraft.cid);
         if(markers[aircraft.cid]) {
-          updateAircraftMarker(markers[aircraft.cid], aircraft, realUpdate);
+          updateAircraftMarker(markers[aircraft.cid], aircraft, isNewData);
         } else {
-          aircraftsAdded.push(aircraft.cid);
+          //aircraftsAdded.push(aircraft.cid);
           addAircraftMarker(markers, aircraft, map)
         }
       });
       for(id in markers) {
         if(currentAircraftIds.indexOf(id) < 0) {
-          aircraftsRemoved.push(id);
+          //aircraftsRemoved.push(id);
           removeAircraftMarker(markers, id);
         }
       };
@@ -83,21 +84,13 @@
     updateATC(map);
     fetchData();
     setInterval(updateAircrafts, 500);
+    setInterval(fetchData, 60*1000)
 
     document.querySelector('#reload').addEventListener('click', function(e){
       e.preventDefault();
       fetchData();
     });
   })();
-
-  /*
-
-  fetchData();
-  setInterval(fetchData, 60*1000);
-
-
-
-  */
 
   function updateAircraftMarker(marker, aircraft, newData) {
     var lat = aircraft.latitude + getYDelta(aircraft);
@@ -121,15 +114,33 @@
 
       // Update the popup details
       var popup = marker.getPopup();
-      popup.setHTML(getPopupContent(aircraft));
+      popup.setHTML(getAircraftPopupContent(aircraft));
     }
   }
 
   function addAircraftMarker(markers, aircraft, map) {
-    var marker = new mapboxgl.Marker(getPlaneMarker(aircraft), {offset: [-15, -15]}).setLngLat([aircraft.longitude, aircraft.latitude]);
+    var lat = aircraft.latitude + getYDelta(aircraft);
+    var lon = aircraft.longitude + getXDelta(aircraft);
 
-    var popup = new mapboxgl.Popup({closeButton: false});
-    popup.setHTML(getPopupContent(aircraft));
+    // make sure we don’t run over the borders
+    lat = Math.min(90, Math.max(-90, lat));
+    lon = Math.min(180, Math.max(-180, lon));
+
+    var marker = new mapboxgl.Marker(getPlaneMarker(aircraft), {offset: [-15, -15]}).setLngLat([lon, lat]);
+
+    var popupOffsets = {
+      'top': [0,12],
+      'top-left': [12,12],
+      'top-right': [-12,12],
+      'bottom': [0,-12],
+      'bottom-left': [12,-12],
+      'bottom-right': [-12,-12],
+      'left': [12,0],
+      'right': [-12,0]
+    };
+
+    var popup = new mapboxgl.Popup({closeButton: false, offset: popupOffsets});
+    popup.setHTML(getAircraftPopupContent(aircraft));
     marker.setPopup(popup);
 
     markers[aircraft.cid] = marker;
@@ -141,7 +152,7 @@
     delete markers[id];
   }
 
-  function getPopupContent(aircraft) {
+  function getAircraftPopupContent(aircraft) {
     return `<h3>${aircraft.callsign}</h3>
       <p>${aircraft.realname}</p>
       <p>${aircraft.planned_depairport} to ${aircraft.planned_destairport}</p>
@@ -152,17 +163,47 @@
       </dl>`;
   }
 
+  function getATCPopupContent(atc) {
+    return `<h3>${atc.callsign}</h3>
+      <p>${atc.realname}</p>
+      <dl>
+        <dt>Frequency</dt><dd>${atc.frequency}</dd>
+      </dl>
+      <p></p>`;
+  }
+
   function updateATC(map) {
     fetch('atc.json', {cache: 'reload'}).then(function(res){
       return res.json();
     }).then(function(data){
       data.data.forEach(function(atc){
-        new mapboxgl.Marker(getATCMarker(atc), {offset: [-12, -12]}).setLngLat([atc.longitude, atc.latitude]).addTo(map);
+        addATCMarker(atc, map);
       });
     })
   }
 
-  function getATCMarker(atc) {
+  function addATCMarker(atc, map) {
+    var marker = new mapboxgl.Marker(getATCMarkerElement(atc), {offset: [-12, -12]}).setLngLat([atc.longitude, atc.latitude]);
+
+    var popupOffsets = {
+      'top': [0,12],
+      'top-left': [12,12],
+      'top-right': [-12,12],
+      'bottom': [0,-12],
+      'bottom-left': [12,-12],
+      'bottom-right': [-12,-12],
+      'left': [12,0],
+      'right': [-12,0]
+    };
+
+    var popup = new mapboxgl.Popup({closeButton: false, offset: popupOffsets});
+    popup.setHTML(getATCPopupContent(atc));
+    marker.setPopup(popup);
+
+    marker.addTo(map);
+  }
+
+  function getATCMarkerElement(atc) {
     var el = document.createElement('div');
     el.classList.add('atc-marker');
     if(/_TWR$/.test(atc.callsign)) { el.classList.add('tower-marker'); }
