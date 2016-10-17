@@ -90,3 +90,16 @@ h1 {
 .plane-marker .hdg-315 { transform: rotate(315deg); }
 .plane-marker .hdg-330 { transform: rotate(330deg); }
 .plane-marker .hdg-345 { transform: rotate(345deg); }
+
+
+.mapboxgl-popup-content dl {
+  width: 200px;
+}
+.mapboxgl-popup-content dt {
+  width: 60%;
+  display: inline-block;
+}
+.mapboxgl-popup-content dd {
+  display: inline-block;
+  width: 40%;
+}
