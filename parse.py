@@ -20,8 +20,8 @@ def update():
   print('received data. parsing…')
   data = r.text.split("\n")
 
-  dt_string = data[0][13:36]
-  dt = datetime.strptime(dt_string, "%d/%m/%Y %H:%M:%S %Z")
+  dt_string = data[0][13:32] + '-0000'
+  dt = datetime.strptime(dt_string, "%d/%m/%Y %H:%M:%S%z")
   timestamp = int(dt.timestamp())
 
   # find the clients

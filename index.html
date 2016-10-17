@@ -48,7 +48,7 @@
         return res.json();
       }).then(function(json){
         lastUpdate = (json.timestamp) * 1000;
-        document.getElementById('last-update').innerHTML = new Date((json.timestamp + 13*3600) * 1000);
+        document.getElementById('last-update').innerHTML = new Date(lastUpdate);
         currentAircrafts = json.data;
         updateAircrafts(json.data);
       });
@@ -175,12 +175,8 @@
   }
 
   function getTimeDelta() {
-    var d = new Date();
-    var offset = d.getTimezoneOffset() * 60 * 1000;
-    if(Math.abs(offset) > 10*60*1000) {
-      return 0;
-    }
-    return (Date.now() - lastUpdate + offset) / 1000;
+    // returns seconds since last update of data
+    return (Date.now() - lastUpdate) / 1000;
   }
 
   function getXDelta(aircraft) {
