@@ -4,17 +4,19 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VATSIM</title>
+  <title>VATSIM Monitor</title>
 
   <script src='js/mapbox-gl.js'></script>
   <link href='css/mapbox-gl.css' rel='stylesheet' />
+
+  <script src="js/moment.js"></script>
 
   <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
   <header class="main-header">
-    <h1>VATSIM Live</h1>
-    <p>Last Update: <span id="last-update"></span> <a id="reload" href="#">update now</a></p>
+    <h1>VATSIM Monitor</h1>
+    <p>Showing data from <span id="last-update"></span> <a id="reload" href="#">[Refresh]</a></p>
   </header>
   <div id="map"></div>
   <p>
@@ -34,6 +36,10 @@
     var currentAircraftIds = [];
     var currentAircrafts = [];
 
+    var noCacheHeaders = new Headers();
+    noCacheHeaders.append('pragma', 'no-cache');
+    noCacheHeaders.append('cache-control', 'no-cache');
+
     var map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/rauberdaniel/ciuc6yrzm002s2ho885r9u5dq',
@@ -45,11 +51,11 @@
     });
 
     var fetchData = function() {
-      fetch('pilots.json', {cache: 'reload'}).then(function(res){
+      fetch('pilots.json', {cache: 'no-cache', headers: noCacheHeaders}).then(function(res){
         return res.json();
       }).then(function(json){
         lastUpdate = (json.timestamp) * 1000;
-        document.getElementById('last-update').innerHTML = new Date(lastUpdate);
+        document.getElementById('last-update').innerHTML = moment(new Date(lastUpdate)).fromNow();
         currentAircrafts = json.data;
         updateAircrafts(json.data);
       });
@@ -57,8 +63,13 @@
 
     var updateAircrafts = function(aircrafts) {
       var isNewData = false;
-      if(aircrafts) { isNewData = true; }
-      aircrafts = aircrafts || currentAircrafts;
+      if(aircrafts && aircrafts.forEach) { isNewData = true; }
+      if(!aircrafts || typeof aircrafts.forEach !== 'function') {
+        aircrafts = currentAircrafts;
+      }
+
+      //aircrafts = aircrafts.filter(function(a){ return a['planned_remarks'].match(/new/gi); })
+
       //var aircraftsAdded = [];
       //var aircraftsRemoved = [];
       currentAircraftIds = [];
@@ -83,7 +94,9 @@
 
     updateATC(map);
     fetchData();
-    setInterval(updateAircrafts, 500);
+    if(!navigator.userAgent.match(/(iOS|Android)/gi)) {
+      setInterval(updateAircrafts, 5 * 1000);
+    }
     setInterval(fetchData, 60*1000)
 
     document.querySelector('#reload').addEventListener('click', function(e){
@@ -91,6 +104,56 @@
       fetchData();
     });
   })();
+
+  function drawRoute(aircraft, airports, map) {
+    var source = map.getSource('aircraft-route');
+
+    var geojson = {
+      type: 'Feature',
+      properties: {
+        name: 'Route'
+      },
+      geometry: {
+        type: 'LineString',
+        coordinates: getRoutePoints(aircraft, airports)
+      }
+    };
+
+    if(source) {
+      source.setData(geojson);
+    } else {
+      map.addSource('aircraft-route', {
+        type: 'geojson',
+        data: geojson
+      });
+
+      map.addLayer({
+        id: 'aircraft-route',
+        type: 'line',
+        source: 'aircraft-route',
+        layout: {
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': 'rgba(51,68,85,0.5)',
+          'line-width': 3
+        }
+      });
+    }
+  }
+
+  function getRoutePoints(aircraft, airports) {
+    var wps = [];
+    var depA = aircraft['planned_depairport'];
+    var destA = aircraft['planned_destairport'];
+    if(depA && airports[depA]) {
+      wps.push([airports[depA].lon, airports[depA].lat]);
+    }
+    if(destA && airports[destA]) {
+      wps.push([airports[destA].lon, airports[destA].lat]);
+    }
+    return wps;
+  }
 
   function updateAircraftMarker(marker, aircraft, newData) {
     var lat = aircraft.latitude + getYDelta(aircraft);
@@ -126,7 +189,15 @@
     lat = Math.min(90, Math.max(-90, lat));
     lon = Math.min(180, Math.max(-180, lon));
 
-    var marker = new mapboxgl.Marker(getPlaneMarker(aircraft), {offset: [-15, -15]}).setLngLat([lon, lat]);
+    var clickHandler = function(){
+      fetch('airports.json').then(function(res){
+        return res.json();
+      }).then(function(airports){
+        drawRoute(aircraft, airports, map);
+      });
+    };
+
+    var marker = new mapboxgl.Marker(getPlaneMarker(aircraft, clickHandler), {offset: [-15, -15]}).setLngLat([lon, lat]);
 
     var popupOffsets = {
       'top': [0,12],
@@ -163,8 +234,14 @@
       </dl>`;
   }
 
-  function getATCPopupContent(atc) {
+  function getATCPopupContent(atc, airports) {
+    var icao = atc.callsign.substr(0,4);
+    var airportName = "";
+    if(airports[icao]) {
+      airportName = airports[icao].label;
+    }
     return `<h3>${atc.callsign}</h3>
+      <p>${airportName}</p>
       <p>${atc.realname}</p>
       <dl>
         <dt>Frequency</dt><dd>${atc.frequency}</dd>
@@ -173,16 +250,32 @@
   }
 
   function updateATC(map) {
-    fetch('atc.json', {cache: 'reload'}).then(function(res){
+    var loaded = function(atcs, airports, map) {
+      if(atcs && airports) {
+        atcs.forEach(function(atc){
+          addATCMarker(atc, map, airports);
+        });
+      }
+    }
+
+    var airports;
+    var atcs;
+    fetch('airports.json').then(function(res){
       return res.json();
     }).then(function(data){
-      data.data.forEach(function(atc){
-        addATCMarker(atc, map);
-      });
-    })
+      airports = data;
+      loaded(atcs, airports, map);
+    });
+
+    fetch('atc.json', {cache: 'no-cache'}).then(function(res){
+      return res.json();
+    }).then(function(data){
+      atcs = data.data;
+      loaded(atcs, airports, map);
+    });
   }
 
-  function addATCMarker(atc, map) {
+  function addATCMarker(atc, map, airports) {
     var marker = new mapboxgl.Marker(getATCMarkerElement(atc), {offset: [-12, -12]}).setLngLat([atc.longitude, atc.latitude]);
 
     var popupOffsets = {
@@ -197,7 +290,7 @@
     };
 
     var popup = new mapboxgl.Popup({closeButton: false, offset: popupOffsets});
-    popup.setHTML(getATCPopupContent(atc));
+    popup.setHTML(getATCPopupContent(atc, airports));
     marker.setPopup(popup);
 
     marker.addTo(map);
@@ -212,9 +305,12 @@
     return el;
   }
 
-  function getPlaneMarker(aircraft) {
+  function getPlaneMarker(aircraft, clickHandler) {
     var el = document.createElement('div');
     el.classList.add('plane-marker');
+
+    el.addEventListener('click', clickHandler);
+
     var plane = document.createElement('div');
     plane.classList.add('hdg-'+getAircraftHeading(aircraft));
     plane.classList.add('plane-'+getAircraftClass(aircraft));
