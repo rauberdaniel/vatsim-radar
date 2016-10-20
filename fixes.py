@@ -1,36 +1,49 @@
+#!/usr/bin/env python3
+
 import json
 import re
+from mapbox import Datasets
+
+datasets = Datasets()
+datasetID = 'ciuhdymvv00rf2zl7rzxve766'
 
 f = open('raw/fixes.json', 'r')
 j = json.load(f)
 f.close()
 
+startWithId = 125
+
+fixes = {}
+
+for name, arr in j.items():
+  for fix in arr:
+    fixes[fix.get('id')] = fix
+
+
 fixesgj = {
   "type": "FeatureCollection",
   "features": []
 }
-fixes = {}
-
-fixesPattern = '(I|J)[A-Z]{4}'
-fixesRegex = re.compile(fixesPattern)
-
-for name, arr in j.items():
-  for fix in arr:
-    if fixesRegex.fullmatch(fix.get('label')):
-      fixes[fix.get('id')] = fix
-
 for d, fix in fixes.items():
-  fixesgj['features'].append({
-    "type":"Feature",
+  if(d<startWithId):
+    continue
+  id = str(fix.get('id'))
+  feature = {
+    "type": "Feature",
+    "id": id,
     "geometry": {
       "type": "Point",
       "coordinates": [fix.get('lon'), fix.get('lat')]
     },
     "properties": {
-      "name": fix.get('label')
+      "name": fix.get('label'),
+      "id": fix.get('id')
     }
-  })
+  }
+  #fixesgj['features'].append(feature)
+  resp = datasets.update_feature(datasetID, id, feature)
+  print("%s %s" % (resp.status_code, id))
 
-f = open('raw/fixes.geojson', 'w')
-f.write(json.dumps(fixesgj))
-f.close()
+fi = open('raw/fixes.geojson', 'w')
+fi.write(json.dumps(fixesgj))
+fi.close()
