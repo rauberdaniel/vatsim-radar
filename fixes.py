@@ -11,7 +11,7 @@ f = open('raw/fixes.json', 'r')
 j = json.load(f)
 f.close()
 
-startWithId = 125
+startWithId = 2200
 
 fixes = {}
 
@@ -42,7 +42,11 @@ for d, fix in fixes.items():
   }
   #fixesgj['features'].append(feature)
   resp = datasets.update_feature(datasetID, id, feature)
-  print("%s %s" % (resp.status_code, id))
+  if resp.status_code != 200:
+    print(resp.json())
+    break
+  else:
+    print("%s %s" % (resp.status_code, id))
 
 fi = open('raw/fixes.geojson', 'w')
 fi.write(json.dumps(fixesgj))
