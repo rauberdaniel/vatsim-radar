@@ -166,19 +166,18 @@
     marker.setLngLat([lon, lat]);
     // set marker heading
     if(newData) {
-      var plane = marker['_element'].querySelector('div');
-      // Update the heading
-      // remove old heading
-      var oldHeading = plane.className.match(/hdg-[0-9]{1,3}/i);
-      if(oldHeading) {
-        plane.classList.remove(oldHeading[0]);
-      }
-      plane.classList.add('hdg-'+getAircraftHeading(aircraft));
+      setMarkerHeading(marker, aircraft.heading)
 
       // Update the popup details
       var popup = marker.getPopup();
       popup.setHTML(getAircraftPopupContent(aircraft));
     }
+  }
+
+  function setMarkerHeading(marker, heading) {
+    var plane = marker['_element'].querySelector('div');
+    // Update the heading
+    plane.setAttribute('style', `transform: rotate(${heading}deg);`)
   }
 
   function addAircraftMarker(markers, aircraft, map) {
@@ -216,6 +215,7 @@
 
     markers[aircraft.cid] = marker;
     marker.addTo(map);
+    return marker;
   }
 
   function removeAircraftMarker(markers, id) {
@@ -309,17 +309,22 @@
     var el = document.createElement('div');
     el.classList.add('plane-marker');
 
-    el.addEventListener('click', clickHandler);
+    if(clickHandler) {
+      el.addEventListener('click', clickHandler);
+    }
 
     var plane = document.createElement('div');
     plane.classList.add('hdg-'+getAircraftHeading(aircraft));
     plane.classList.add('plane-'+getAircraftClass(aircraft));
+    if(aircraft.own) {
+      plane.classList.add('plane-own');
+    }
     el.appendChild(plane);
     return el;
   }
 
-  function getAircraftHeading(aircraft) {
-    return (Math.round(aircraft.heading/15) * 15) % 360;
+  function getAircraftHeading(heading) {
+    return (Math.round(heading/15) * 15) % 360;
   }
 
   function getAircraftClass(aircraft) {

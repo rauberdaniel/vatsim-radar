@@ -69,6 +69,11 @@ h1 {
   background-size: 100% 100%;
 }
 
+.plane-marker .plane-own {
+  background-color: red;
+  border-radius: 50%;
+}
+
 .plane-marker .hdg-0 { transform: rotate(0deg); }
 .plane-marker .hdg-15 { transform: rotate(15deg); }
 .plane-marker .hdg-30 { transform: rotate(30deg); }
