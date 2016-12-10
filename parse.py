@@ -31,7 +31,7 @@ def update():
   while data[index] != ";":
     clientData = data[index].split(":")
     clientData.pop()
-    if len(clientData) > 3 && clientData[3] == "PILOT":
+    if len(clientData) > 3 and clientData[3] == "PILOT":
       clientData[5] = float(clientData[5]) if clientData[5] != "" else "" # latitude
       clientData[6] = float(clientData[6]) if clientData[6] != "" else "" # longitude
       clientData[7] = float(clientData[7]) if clientData[7] != "" else "" # altitude
