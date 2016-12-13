@@ -36,6 +36,8 @@
     var currentAircraftIds = [];
     var currentAircrafts = [];
 
+    var atcMarkers = [];
+
     var noCacheHeaders = new Headers();
     noCacheHeaders.append('pragma', 'no-cache');
     noCacheHeaders.append('cache-control', 'no-cache');
@@ -49,6 +51,24 @@
         hash: true,
         maxBounds: [[-210, -90], [210, 90]]
     });
+
+    // own airplane
+    //var ws = new WebSocket("ws://127.0.0.1:5678/");
+    var ownMarker;
+    var ownAircraft = {own: true};
+    /*
+    ws.onmessage = function(event) {
+      data = JSON.parse(event.data);
+      if(data.lat && data.lon && data.heading) {
+        ownAircraft.lat = data.lat;
+        ownAircraft.lng = data.lon;
+        ownAircraft.heading = data.heading;
+        ownMarker = ownMarker || new mapboxgl.Marker(getPlaneMarker(ownAircraft), {offset: [-15, -15]}).setLngLat([data.lon, data.lat]).addTo(map);
+        ownMarker.setLngLat([data.lon, data.lat]);
+        setMarkerHeading(ownMarker, ownAircraft.heading);
+      }
+    };
+    */
 
     var fetchData = function() {
       fetch('pilots.json', {cache: 'no-cache', headers: noCacheHeaders}).then(function(res){
@@ -92,12 +112,13 @@
       //console.log('removed', aircraftsRemoved);
     }
 
-    updateATC(map);
+    updateATC(map, atcMarkers);
     fetchData();
     if(!navigator.userAgent.match(/(iOS|Android)/gi)) {
-      setInterval(updateAircrafts, 5 * 1000);
+      setInterval(updateAircrafts, 1 * 1000);
     }
     setInterval(fetchData, 60*1000)
+    setInterval(function(){ updateATC(map, atcMarkers); }, 10*1000);
 
     document.querySelector('#reload').addEventListener('click', function(e){
       e.preventDefault();
@@ -249,11 +270,16 @@
       <p></p>`;
   }
 
-  function updateATC(map) {
+  function updateATC(map, atcMarkers) {
+    // delete all ATC Markers before adding them again
+    while(marker = atcMarkers.pop()) {
+      marker.remove();
+    }
+
     var loaded = function(atcs, airports, map) {
       if(atcs && airports) {
         atcs.forEach(function(atc){
-          addATCMarker(atc, map, airports);
+          addATCMarker(atc, map, airports, atcMarkers);
         });
       }
     }
@@ -275,7 +301,7 @@
     });
   }
 
-  function addATCMarker(atc, map, airports) {
+  function addATCMarker(atc, map, airports, atcMarkers) {
     var marker = new mapboxgl.Marker(getATCMarkerElement(atc), {offset: [-12, -12]}).setLngLat([atc.longitude, atc.latitude]);
 
     var popupOffsets = {
@@ -294,6 +320,7 @@
     marker.setPopup(popup);
 
     marker.addTo(map);
+    atcMarkers.push(marker);
   }
 
   function getATCMarkerElement(atc) {
@@ -323,8 +350,8 @@
     return el;
   }
 
-  function getAircraftHeading(heading) {
-    return (Math.round(heading/15) * 15) % 360;
+  function getAircraftHeading(aircraft) {
+    return (Math.round(aircraft.heading/15) * 15) % 360;
   }
 
   function getAircraftClass(aircraft) {
