@@ -118,7 +118,7 @@
     };
 
     var fetchData = function() {
-      fetch('/vatsim-data.txt').then(function(result){
+      fetch('/vatsim-data.txt', {cache: 'no-cache'}).then(function(result){
         return result.text();
       }).then(function(text){
         var dateStamp = new Date();
