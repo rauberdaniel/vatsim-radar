@@ -118,32 +118,44 @@
     };
 
     var fetchData = function() {
-      fetch('/vatsim-data.txt', {cache: 'no-cache'}).then(function(result){
-        return result.text();
-      }).then(function(text){
-        var dateStamp = new Date();
-        dateStamp.setUTCFullYear(parseInt(text.substr(19,4)), parseInt(text.substr(16,2))-1, parseInt(text.substr(13,2)));
-        dateStamp.setUTCHours(parseInt(text.substr(24,2)));
-        dateStamp.setUTCMinutes(parseInt(text.substr(27,2)));
-        dateStamp.setUTCSeconds(parseInt(text.substr(30,2)));
+      var myHeaders = new Headers();
+      myHeaders.append('pragma', 'no-cache');
+      myHeaders.append('cache-control', 'no-cache');
 
-        lastUpdate = dateStamp.getTime();
-        document.getElementById('last-update').innerHTML = moment(new Date(lastUpdate)).fromNow();
+      var myInit = {
+        method: 'GET',
+        headers: myHeaders,
+      };
 
-        var startPosition = text.indexOf('!CLIENTS:') + 10;
-        var length = text.indexOf(";\n;\n!SERVERS:") - startPosition;
-        var clientData = text.substr(startPosition, length);
-        var clientsRaw = clientData.split("\n");
-        var clients = clientsRaw.map(function(c){ return createAircraftObject(c); });
+      var myRequest = new Request('/vatsim-data.txt');
 
-        var aircraft = clients.filter(function(c) {
-          if(c.clienttype !== "PILOT") { return false; }
-          if(isNaN(c.heading) || isNaN(c.latitude) || isNaN(c.longitude)) { return false; }
-          return true;
+      fetch(myRequest, myInit)
+        .then(function(result){
+          return result.text();
+        }).then(function(text){
+          var dateStamp = new Date();
+          dateStamp.setUTCFullYear(parseInt(text.substr(19,4)), parseInt(text.substr(16,2))-1, parseInt(text.substr(13,2)));
+          dateStamp.setUTCHours(parseInt(text.substr(24,2)));
+          dateStamp.setUTCMinutes(parseInt(text.substr(27,2)));
+          dateStamp.setUTCSeconds(parseInt(text.substr(30,2)));
+
+          lastUpdate = dateStamp.getTime();
+          document.getElementById('last-update').innerHTML = moment(new Date(lastUpdate)).fromNow();
+
+          var startPosition = text.indexOf('!CLIENTS:') + 10;
+          var length = text.indexOf(";\n;\n!SERVERS:") - startPosition;
+          var clientData = text.substr(startPosition, length);
+          var clientsRaw = clientData.split("\n");
+          var clients = clientsRaw.map(function(c){ return createAircraftObject(c); });
+
+          var aircraft = clients.filter(function(c) {
+            if(c.clienttype !== "PILOT") { return false; }
+            if(isNaN(c.heading) || isNaN(c.latitude) || isNaN(c.longitude)) { return false; }
+            return true;
+          });
+          currentAircrafts = aircraft;
+          updateAircrafts(aircraft);
         });
-        currentAircrafts = aircraft;
-        updateAircrafts(aircraft);
-      });
     };
 
     var updateAircrafts = function(aircrafts) {
