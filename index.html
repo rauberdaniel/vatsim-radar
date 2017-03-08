@@ -19,12 +19,12 @@
     <p>Showing data from <span id="last-update"></span> <a id="reload" href="#">[Refresh]</a></p>
   </header>
   <div id="map"></div>
-  <p>
+  <footer class="main-footer">
     <h2>Credits</h2>
     <p>Airport by Aldric Rodríguez Iborra from the Noun Project</p>
     <p>Airplane by Aldric Rodríguez Iborra from the Noun Project</p>
     <p>Airplane by Michal Beno from the Noun Project</p>
-  </p>
+  </footer>
 
   <script src="js/fetch.js"></script>
   <script>
@@ -37,6 +37,7 @@
     var currentAircrafts = [];
 
     var atcMarkers = [];
+    var airports = [];
 
     var noCacheHeaders = new Headers();
     noCacheHeaders.append('pragma', 'no-cache');
@@ -51,6 +52,12 @@
         hash: true,
         maxBounds: [[-210, -90], [210, 90]]
     });
+
+    // disable map rotation using right click + drag
+    map.dragRotate.disable();
+
+    // disable map rotation using touch rotation gesture
+    map.touchZoomRotate.disableRotation();
 
     // own airplane
     //var ws = new WebSocket("ws://127.0.0.1:5678/");
@@ -127,7 +134,7 @@
         headers: myHeaders,
       };
 
-      var myRequest = new Request('/vatsim-data.txt');
+      var myRequest = new Request('http://vatsim.danielrauber.de/vatsim-data.txt');
 
       fetch(myRequest, myInit)
         .then(function(result){
@@ -143,7 +150,7 @@
           document.getElementById('last-update').innerHTML = moment(new Date(lastUpdate)).fromNow();
 
           var startPosition = text.indexOf('!CLIENTS:') + 10;
-          var length = text.indexOf(";\n;\n!SERVERS:") - startPosition;
+          var length = text.indexOf("\n!SERVERS:") - startPosition;
           var clientData = text.substr(startPosition, length);
           var clientsRaw = clientData.split("\n");
           var clients = clientsRaw.map(function(c){ return createAircraftObject(c); });
@@ -153,8 +160,16 @@
             if(isNaN(c.heading) || isNaN(c.latitude) || isNaN(c.longitude)) { return false; }
             return true;
           });
+
+          var atcClients = clients.filter(function(c) {
+            if(c.clienttype !== "ATC") { return false; }
+            if(isNaN(c.latitude) || isNaN(c.longitude)) { return false; }
+            return true;
+          });
+
           currentAircrafts = aircraft;
           updateAircrafts(aircraft);
+          updateATCs(atcMarkers, atcClients, airports, map);
         });
     };
 
@@ -189,13 +204,18 @@
       //console.log('removed', aircraftsRemoved);
     }
 
-    updateATC(map, atcMarkers);
-    fetchData();
+    // download the airports
+    fetch('airports.json').then(function(res){
+      return res.json();
+    }).then(function(data){
+      airports = data;
+      fetchData();
+    });
+
     if(!navigator.userAgent.match(/(iOS|Android)/gi)) {
       setInterval(updateAircrafts, 1 * 1000);
     }
-    setInterval(fetchData, 60*1000)
-    setInterval(function(){ updateATC(map, atcMarkers); }, 5*60*1000);
+    setInterval(fetchData, 30*1000);
 
     document.querySelector('#reload').addEventListener('click', function(e){
       e.preventDefault();
@@ -339,43 +359,24 @@
     if(airports[icao]) {
       airportName = airports[icao].label;
     }
+    var atisMessage = atc.atis_message.replace(/^\$\s[^�]+�/, "").replace(/\^?�/g, " ");
     return `<h3>${atc.callsign}</h3>
       <p>${airportName}</p>
       <p>${atc.realname}</p>
       <dl>
         <dt>Frequency</dt><dd>${atc.frequency}</dd>
       </dl>
-      <p></p>`;
+      <p class="atis-message">${atisMessage}</p>`;
   }
 
-  function updateATC(map, atcMarkers) {
-    // delete all ATC Markers before adding them again
+  function updateATCs(atcMarkers, atcClients, airports, map) {
+    // remove all the markers
     while(marker = atcMarkers.pop()) {
       marker.remove();
     }
-
-    var loaded = function(atcs, airports, map) {
-      if(atcs && airports) {
-        atcs.forEach(function(atc){
-          addATCMarker(atc, map, airports, atcMarkers);
-        });
-      }
-    }
-
-    var airports;
-    var atcs;
-    fetch('airports.json').then(function(res){
-      return res.json();
-    }).then(function(data){
-      airports = data;
-      loaded(atcs, airports, map);
-    });
-
-    fetch('atc.json', {cache: 'no-cache'}).then(function(res){
-      return res.json();
-    }).then(function(data){
-      atcs = data.data;
-      loaded(atcs, airports, map);
+    // add new markers
+    atcClients.forEach(function(atc){
+      addATCMarker(atc, map, airports, atcMarkers);
     });
   }
 
