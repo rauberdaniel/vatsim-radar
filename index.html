@@ -148,6 +148,7 @@
 
           lastUpdate = dateStamp.getTime();
           document.getElementById('last-update').innerHTML = moment(new Date(lastUpdate)).fromNow();
+          //document.getElementById('last-update').innerHTML = Math.round((Date.now() - lastUpdate) / 1000) + " seconds ago";
 
           var startPosition = text.indexOf('!CLIENTS:') + 10;
           var length = text.indexOf("\n!SERVERS:") - startPosition;
@@ -191,7 +192,7 @@
           updateAircraftMarker(markers[aircraft.cid], aircraft, isNewData);
         } else {
           //aircraftsAdded.push(aircraft.cid);
-          addAircraftMarker(markers, aircraft, map)
+          addAircraftMarker(markers, aircraft, map, airports)
         }
       });
       for(id in markers) {
@@ -298,7 +299,7 @@
     plane.setAttribute('style', `transform: rotate(${heading}deg);`)
   }
 
-  function addAircraftMarker(markers, aircraft, map) {
+  function addAircraftMarker(markers, aircraft, map, airports) {
     var lat = aircraft.latitude + getYDelta(aircraft);
     var lon = aircraft.longitude + getXDelta(aircraft);
 
@@ -307,11 +308,7 @@
     lon = Math.min(180, Math.max(-180, lon));
 
     var clickHandler = function(){
-      fetch('airports.json').then(function(res){
-        return res.json();
-      }).then(function(airports){
-        drawRoute(aircraft, airports, map);
-      });
+      drawRoute(aircraft, airports, map);
     };
 
     var marker = new mapboxgl.Marker(getPlaneMarker(aircraft, clickHandler), {offset: [-15, -15]}).setLngLat([lon, lat]);
@@ -422,7 +419,7 @@
     var plane = document.createElement('div');
     plane.classList.add('hdg-'+getAircraftHeading(aircraft));
     plane.classList.add('plane-'+getAircraftClass(aircraft));
-    if(aircraft.own) {
+    if(aircraft.own || aircraft.cid === "1371442") {
       plane.classList.add('plane-own');
     }
     el.appendChild(plane);
